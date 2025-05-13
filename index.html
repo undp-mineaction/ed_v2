@@ -258,7 +258,7 @@
         if (visibleDays.length > 0 && casualtiesLayerView) {
           const whereClause = visibleDays.map(day => `report_dt LIKE '${day}%'`).join(" OR ");
           casualtiesLayerView.filter = { where: whereClause };
-          rangeDisplay.textContent = `Visible Date Range: ${visibleDays[0]} → ${visibleDays[visibleDays.length - 1]}`;
+          rangeDisplay.textContent = `${visibleDays[0]} - ${visibleDays[visibleDays.length - 1]}`;
         }
       }
     });
