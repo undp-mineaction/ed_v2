@@ -8,12 +8,17 @@
   <script src="https://js.arcgis.com/4.28/"></script>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    html, body, #viewDiv {
+    html, body {
       padding: 0;
       margin: 0;
       height: 100%;
       width: 100%;
       font-family: 'Nunito', 'Avenir', sans-serif;
+    }
+
+    #viewDiv {
+      height: calc(100% - 160px);
+      width: 100%;
     }
 
     #infoBox {
@@ -30,7 +35,7 @@
 
     #metadataContainer {
       position: absolute;
-      bottom: 30px;
+      bottom: 40px;
       left: 0;
       right: 0;
       height: 120px;
@@ -39,19 +44,6 @@
       background: rgba(0, 0, 0, 0.4);
       z-index: 9;
       border-top: 1px solid #888;
-    }
-
-    #metadataContainer::-webkit-scrollbar {
-      height: 10px;
-    }
-
-    #metadataContainer::-webkit-scrollbar-thumb {
-      background: rgba(200, 200, 200, 0.5);
-      border-radius: 6px;
-    }
-
-    #metadataContainer::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.4);
     }
 
     .metadataDay {
@@ -68,18 +60,18 @@
       background-color: rgba(255, 255, 255, 0.1);
     }
 
-    #visibleRange {
+    #dateRangeDisplay {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(0, 0, 0, 0.4);
+      height: 40px;
+      background: rgba(0, 0, 0, 0.6);
       color: white;
       text-align: center;
-      padding: 4px 0;
+      line-height: 40px;
       font-size: 13px;
       z-index: 10;
-      border-top: 1px solid #888;
     }
   </style>
 </head>
@@ -88,11 +80,11 @@
 
   <div id="infoBox">
     <h3>EO Fatalities</h3>
-    <div id="counts">Boys: 0 | Girls: 0 | Men: 0 | Women: 0 | Injured: 0</div>
+    <div id="counts">Loading...</div>
   </div>
 
   <div id="metadataContainer"></div>
-  <div id="visibleRange">Visible Dates: </div>
+  <div id="dateRangeDisplay">Visible Date Range: </div>
 
   <script>
     require([
@@ -101,18 +93,14 @@
       "esri/layers/FeatureLayer"
     ], function(Map, MapView, FeatureLayer) {
 
-      const map = new Map({
-        basemap: "gray"
-      });
+      const map = new Map({ basemap: "gray" });
 
       const view = new MapView({
         container: "viewDiv",
         map: map,
         center: [31.1656, 48.3794],
         zoom: 6,
-        ui: {
-          components: ["attribution"]
-        }
+        ui: { components: ["attribution"] }
       });
       view.popup.maxWidth = 100;
 
@@ -125,7 +113,7 @@
           content: `
             <strong>Incident Count:</strong> {Incident_Count}<br/>
             <strong>Total Killed:</strong> {killed}<br/>
-            <strong>Total Injured:</strong> {injured}</br> 
+            <strong>Total Injured:</strong> {injured}</br>
             <div style="display: flex; gap: 20px; margin-top: 5px;">
               <div>
                 <strong>Killed:</strong>
@@ -150,13 +138,19 @@
           `
         },
         labelingInfo: [{
-          labelExpressionInfo: { expression: "$feature.Incident_Count" },
+          labelExpressionInfo: {
+            expression: "$feature.Incident_Count"
+          },
           symbol: {
             type: "text",
             color: "white",
             haloColor: "black",
             haloSize: 1,
-            font: { size: 10, family: "Avenir Next", weight: "normal" }
+            font: {
+              size: 10,
+              family: "Avenir Next",
+              weight: "normal"
+            }
           },
           labelPlacement: "center-center"
         }],
@@ -167,7 +161,10 @@
             type: "simple-marker",
             color: "#e74c3c",
             size: "25px",
-            outline: { color: "#ffffff", width: 1 }
+            outline: {
+              color: "#ffffff",
+              width: 1
+            }
           }
         }
       });
@@ -177,9 +174,10 @@
       map.add(casualtiesLayer);
 
       const container = document.getElementById("metadataContainer");
+      const rangeDisplay = document.getElementById("dateRangeDisplay");
 
       casualtiesLayer.when(() => {
-        view.whenLayerView(casualtiesLayer).then(layerView => {
+        view.whenLayerView(casualtiesLayer).then(function(layerView) {
           casualtiesLayerView = layerView;
         });
 
@@ -190,31 +188,43 @@
         }).then(result => {
           const features = result.features;
           const dayGroups = {};
-          let boys = 0, girls = 0, men = 0, women = 0, injuredTotal = 0;
+
+          let boys = 0, girls = 0, men = 0, women = 0;
 
           features.forEach(f => {
             const attr = f.attributes;
             const date = new Date(attr.report_dt);
             const day = date.toISOString().split("T")[0];
+
             if (!dayGroups[day]) dayGroups[day] = [];
             dayGroups[day].push(attr);
+
             boys += attr.killed_male_child || 0;
             girls += attr.killed_female_child || 0;
             men += attr.killed_male_adult || 0;
             women += attr.killed_female_adult || 0;
-            injuredTotal += (attr.injured_female_adult || 0) + (attr.injured_male_adult || 0) + (attr.injured_female_child || 0) + (attr.injured_male_child || 0);
           });
 
-          document.getElementById("counts").textContent =
-            `Boys: ${boys} | Girls: ${girls} | Men: ${men} | Women: ${women} | Injured: ${injuredTotal}`;
+          const injuredBoys = features.reduce((sum, f) => sum + (f.attributes.injured_male_child || 0), 0);
+          const injuredGirls = features.reduce((sum, f) => sum + (f.attributes.injured_female_child || 0), 0);
+          const injuredMen = features.reduce((sum, f) => sum + (f.attributes.injured_male_adult || 0), 0);
+          const injuredWomen = features.reduce((sum, f) => sum + (f.attributes.injured_female_adult || 0), 0);
+
+          document.getElementById("counts").innerHTML =
+            `<strong>Killed:</strong> Boys: ${boys} | Girls: ${girls} | Men: ${men} | Women: ${women}<br/>
+             <strong>Injured:</strong> Boys: ${injuredBoys} | Girls: ${injuredGirls} | Men: ${injuredMen} | Women: ${injuredWomen}`;
 
           container.innerHTML = "";
 
           Object.entries(dayGroups).sort().forEach(([day, attrs]) => {
             let killed = 0, injured = 0;
+
             attrs.forEach(a => {
               killed += a.killed || 0;
-              injured += (a.injured_female_adult || 0) + (a.injured_male_adult || 0) + (a.injured_female_child || 0) + (a.injured_male_child || 0);
+              injured += (a.injured_female_adult || 0) +
+                         (a.injured_male_adult || 0) +
+                         (a.injured_female_child || 0) +
+                         (a.injured_male_child || 0);
             });
 
             const box = document.createElement("div");
@@ -244,14 +254,10 @@
           }
         });
 
-        if (visibleDays.length > 0) {
-          const rangeText = `Visible Dates: ${visibleDays[0]} to ${visibleDays[visibleDays.length - 1]}`;
-          document.getElementById("visibleRange").textContent = rangeText;
-
-          if (casualtiesLayerView) {
-            const whereClause = visibleDays.map(day => `report_dt LIKE '${day}%'`).join(" OR ");
-            casualtiesLayerView.filter = { where: whereClause };
-          }
+        if (visibleDays.length > 0 && casualtiesLayerView) {
+          const whereClause = visibleDays.map(day => `report_dt LIKE '${day}%'`).join(" OR ");
+          casualtiesLayerView.filter = { where: whereClause };
+          rangeDisplay.textContent = `Visible Date Range: ${visibleDays[0]} → ${visibleDays[visibleDays.length - 1]}`;
         }
       }
     });
