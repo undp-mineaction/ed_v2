@@ -51,16 +51,17 @@
   height: 120px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none; /* Firefox fallback */
+  scrollbar-width: auto; /* Firefox: restore default visibility */
+  scrollbar-color: #888 transparent; /* Firefox: thumb and track */
 }
 
-/* Custom scrollbar styles (Webkit: Chrome, Edge, Safari) */
+/* Chrome, Edge, Safari */
 #metadataContainer::-webkit-scrollbar {
-  height: 20px; /* Thickness of horizontal scrollbar */
+  height: 16px; /* Set desired scrollbar thickness */
 }
 
 #metadataContainer::-webkit-scrollbar-thumb {
-  background-color: #888;  /* Gray rectangle */
+  background-color: #888;  /* Gray thumb */
   border-radius: 4px;
 }
 
