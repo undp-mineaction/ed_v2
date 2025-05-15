@@ -98,9 +98,26 @@
       font-size: 13px;
       z-index: 10;
     }
+
+    #logoBox {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 20;
+    }
+
+    #logoBox img {
+    height: 50px; /* Adjust as needed */
+    width: auto;
+    opacity: 0.9; /* Slight transparency for subtlety */
+  }
   </style>
 </head>
 <body>
+  <div id="logoBox">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/UNDP_logo.svg/1200px-UNDP_logo.svg.png" alt="UNDP Logo" />
+  </div>
+  <div id="viewDiv"></div>
   <div id="viewDiv"></div>
 
   <div id="infoBox">
