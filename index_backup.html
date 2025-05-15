@@ -28,7 +28,7 @@
       background: rgba(11, 10, 10, 0.2);
       padding: 12px 18px;
       z-index: 10;
-      color: #0468B1;
+      color: 	#0468B1;
       min-width: 280px;
       font-size: 14px;
     }
@@ -40,33 +40,40 @@
       right: 0;
       height: 120px;
       overflow-x: auto;
-      overflow-y: hidden;
       display: flex;
       background: rgba(0, 0, 0, 0.3);
       z-index: 9;
       border-top: 1px solid #888;
-      scrollbar-width: auto;
-      scrollbar-color: #888 transparent;
     }
 
-    #metadataContainer::-webkit-scrollbar {
-      height: 20px;
-    }
+  /* Make sure metadata container scrolls horizontally */
+#metadataContainer {
+  height: 120px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: auto; /* Firefox: restore default visibility */
+  scrollbar-color: #888 transparent; /* Firefox: thumb and track */
+}
 
-    #metadataContainer::-webkit-scrollbar-thumb {
-      background-color: #888;
-      border-radius: 0;
-      -webkit-appearance: none;
-    }
+/* Chrome, Edge, Safari */
+#metadataContainer::-webkit-scrollbar {
+  height: 20px; /* Set desired scrollbar thickness */
+}
 
-    #metadataContainer::-webkit-scrollbar-track {
-      background: transparent;
-    }
+#metadataContainer::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 0; /* Remove rounding */
+  -webkit-appearance: none; /* Prevent default appearance */
+}
+
+#metadataContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
 
     .metadataDay {
       min-width: 140px;
       padding: 6px;
-      color: black;
+      color: white;
       border-right: 0.5px solid #555;
       font-size: 12px;
       text-align: center;
@@ -74,7 +81,7 @@
     }
 
     .metadataDay.highlight {
-      outline: 2px solid #ffffff;
+      background-color: rgba(255, 255, 255, 0.1);
     }
 
     #dateRangeDisplay {
@@ -100,10 +107,10 @@
     }
 
     #logoBox img {
-      height: 50px;
-      width: auto;
-      opacity: 1;
-    }
+    height: 50px; /* Adjust as needed */
+    width: auto;
+    opacity: 1; /* Slight transparency for subtlety */
+  }
   </style>
 </head>
 <body>
@@ -111,9 +118,10 @@
     <img src="https://raw.githubusercontent.com/undp-mineaction/ed_v2/main/UNDP_LOGO.png" alt="UNDP Logo" />
   </div>
   <div id="viewDiv"></div>
+  <div id="viewDiv"></div>
 
   <div id="infoBox">
-    <h3>EO Casualties SADD Breakdown</h3>
+    <h3>EO Casualites SADD Breakdown</h3>
     <div id="counts">Loading...</div>
   </div>
 
@@ -136,7 +144,6 @@
         zoom: 6,
         ui: { components: ["attribution"] }
       });
-
       view.popup.maxWidth = 100;
 
       const casualtiesLayer = new FeatureLayer({
@@ -251,7 +258,7 @@
 
           container.innerHTML = "";
 
-          Object.entries(dayGroups).sort().forEach(([day, attrs], index) => {
+          Object.entries(dayGroups).sort().forEach(([day, attrs]) => {
             let killed = 0, injured = 0;
 
             attrs.forEach(a => {
@@ -265,8 +272,6 @@
             const box = document.createElement("div");
             box.className = "metadataDay";
             box.setAttribute("data-day", day);
-            box.style.backgroundColor = index % 2 === 0 ? "#d3d3d3" : "#a9a9a9";
-
             box.innerHTML = `<strong>${day}</strong><br/>Events: ${attrs.length}<br/>Deaths: ${killed}<br/>Injured: ${injured}`;
             container.appendChild(box);
           });
