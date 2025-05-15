@@ -46,29 +46,27 @@
       border-top: 1px solid #888;
     }
 
-    /* Scrollbar styles for WebKit-based browsers (Chrome, Edge, Safari) */
-    #metadataContainer::-webkit-scrollbar {
-    height: 50px;
-    }
+  /* Make sure metadata container scrolls horizontally */
+#metadataContainer {
+  height: 120px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox fallback */
+}
 
-    #metadataContainer::-webkit-scrollbar-track {
-    background: transparent; /* or use a light gray like #e0e0e0 */
-    }
+/* Custom scrollbar styles (Webkit: Chrome, Edge, Safari) */
+#metadataContainer::-webkit-scrollbar {
+  height: 20px; /* Thickness of horizontal scrollbar */
+}
 
-    #metadataContainer::-webkit-scrollbar-thumb {
-    background-color: #888; /* gray rectangle */
-    
-    }
+#metadataContainer::-webkit-scrollbar-thumb {
+  background-color: #888;  /* Gray rectangle */
+  border-radius: 4px;
+}
 
-    #metadataContainer::-webkit-scrollbar-button {
-    display: none; /* Removes arrows */
-    }
-
-    /* Scrollbar styles for Firefox */
-    #metadataContainer {
-    scrollbar-width: thin;
-    scrollbar-color: #888 transparent;
-    }
+#metadataContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
 
     .metadataDay {
       min-width: 140px;
