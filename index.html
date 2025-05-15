@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://js.arcgis.com/4.28/esri/themes/dark/main.css" rel="stylesheet" />
   <script src="https://js.arcgis.com/4.28/"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap" rel="stylesheet">
   <style>
     html, body {
       padding: 0;
@@ -14,8 +14,6 @@
       height: 100%;
       width: 100%;
       font-family: 'Nunito', 'Avenir', sans-serif;
-      background: #222;
-      color: white;
     }
 
     #viewDiv {
@@ -51,7 +49,6 @@
       scrollbar-color: #888 transparent;
     }
 
-    /* Scrollbar styling */
     #metadataContainer::-webkit-scrollbar {
       height: 20px;
     }
@@ -69,29 +66,15 @@
     .metadataDay {
       min-width: 140px;
       padding: 6px;
+      color: rgb(251, 245, 245);
       border-right: 0.5px solid #555;
       font-size: 12px;
+      text-align: center;
       flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      box-sizing: border-box;
-    }
-
-    /* Alternating background colors */
-    .metadataDay:nth-child(odd) {
-      background-color: #a9a9a9; /* light grey */
-    }
-
-    .metadataDay:nth-child(even) {
-      background-color: #505050; /* dark grey */
     }
 
     .metadataDay.highlight {
-      background-color: rgba(255, 255, 255, 0.2) !important;
-      color: white;
+      outline: 2px solid #cecaca;
     }
 
     #dateRangeDisplay {
@@ -130,7 +113,7 @@
   <div id="viewDiv"></div>
 
   <div id="infoBox">
-    <h3>EO Casualites SADD Breakdown</h3>
+    <h3>EO Casualties SADD Breakdown</h3>
     <div id="counts">Loading...</div>
   </div>
 
@@ -143,6 +126,7 @@
       "esri/views/MapView",
       "esri/layers/FeatureLayer"
     ], function(Map, MapView, FeatureLayer) {
+
       const map = new Map({ basemap: "gray" });
 
       const view = new MapView({
@@ -152,6 +136,7 @@
         zoom: 6,
         ui: { components: ["attribution"] }
       });
+
       view.popup.maxWidth = 100;
 
       const casualtiesLayer = new FeatureLayer({
@@ -266,7 +251,7 @@
 
           container.innerHTML = "";
 
-          Object.entries(dayGroups).sort().forEach(([day, attrs]) => {
+          Object.entries(dayGroups).sort().forEach(([day, attrs], index) => {
             let killed = 0, injured = 0;
 
             attrs.forEach(a => {
@@ -277,26 +262,12 @@
                          (a.injured_male_child || 0);
             });
 
-            const readableDate = new Date(day);
-            const month = readableDate.toLocaleDateString('en-US', { month: 'short' });
-            const dayNumber = readableDate.getDate();
-
             const box = document.createElement("div");
             box.className = "metadataDay";
             box.setAttribute("data-day", day);
+            box.style.backgroundColor = index % 2 === 0 ? "#d3d3d3" : "#a9a9a9";
 
-            box.innerHTML = `
-              <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
-                <div style="font-size: 11px; color: #eee;">${month}</div>
-                <div style="font-size: 24px; font-weight: bold; color: white;">${dayNumber}</div>
-                <div style="font-size: 12px; text-align: center; margin-top: 6px;">
-                  Events: ${attrs.length}<br/>
-                  Deaths: ${killed}<br/>
-                  Injured: ${injured}
-                </div>
-              </div>
-            `;
-
+            box.innerHTML = `<strong>${day}</strong><br/>Events: ${attrs.length}<br/>Deaths: ${killed}<br/>Injured: ${injured}`;
             container.appendChild(box);
           });
 
@@ -323,7 +294,7 @@
         if (visibleDays.length > 0 && casualtiesLayerView) {
           const whereClause = visibleDays.map(day => `report_dt LIKE '${day}%'`).join(" OR ");
           casualtiesLayerView.filter = { where: whereClause };
-          rangeDisplay.textContent = `Visible Date Range: ${visibleDays[0]} - ${visibleDays[visibleDays.length - 1]}`;
+          rangeDisplay.textContent = `${visibleDays[0]} - ${visibleDays[visibleDays.length - 1]}`;
         }
       }
     });
