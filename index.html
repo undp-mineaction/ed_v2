@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://js.arcgis.com/4.28/esri/themes/dark/main.css" rel="stylesheet" />
   <script src="https://js.arcgis.com/4.28/"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     html, body {
       padding: 0;
@@ -14,6 +14,7 @@
       height: 100%;
       width: 100%;
       font-family: 'Nunito', 'Avenir', sans-serif;
+      background: #121212;
     }
 
     #viewDiv {
@@ -38,43 +39,99 @@
       bottom: 40px;
       left: 0;
       right: 0;
-      height: 120px;
+      height: 220px;
       overflow-x: auto;
-      overflow-y: hidden;
       display: flex;
-      background: rgba(0, 0, 0, 0.3);
+      background: transparent;
       z-index: 9;
-      border-top: 1px solid #888;
+      border-top: 1px solid #555;
       scrollbar-width: auto;
       scrollbar-color: #888 transparent;
     }
 
     #metadataContainer::-webkit-scrollbar {
-      height: 20px;
+      height: 40px;
     }
-
     #metadataContainer::-webkit-scrollbar-thumb {
       background-color: #888;
       border-radius: 0;
       -webkit-appearance: none;
     }
-
     #metadataContainer::-webkit-scrollbar-track {
       background: transparent;
     }
 
     .metadataDay {
-      min-width: 140px;
-      padding: 6px;
-      color: rgb(251, 245, 245);
+      min-width: 160px;
+      padding: 6px 12px;
+      color: white;
       border-right: 0.5px solid #555;
       font-size: 12px;
       text-align: center;
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background-color: #2a2a2a;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.25s ease;
+    }
+    .metadataDay:nth-child(even) {
+      background-color: #3c3c3c;
     }
 
-    .metadataDay.highlight {
-      outline: 2px solid #cecaca;
+    .dateLabel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+      user-select: none;
+    }
+    .dateLabel .month {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .dateLabel .day {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 2px;
+      color: white;
+    }
+
+    .incidentList {
+      margin-top: 8px;
+      max-height: 140px;
+      overflow-y: auto;
+      font-size: 11px;
+      color: #ddd;
+      text-align: left;
+    }
+
+    .incidentRecord {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+      white-space: nowrap;
+    }
+
+    .redDot {
+      width: 20px;
+      height: 20px;
+      background-color: #e74c3c;
+      border-radius: 50%;
+      margin-right: 6px;
+      flex-shrink: 0;
+      color: white;
+      font-weight: 700;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
     }
 
     #dateRangeDisplay {
@@ -113,7 +170,6 @@
   <div id="viewDiv"></div>
 
   <div id="infoBox">
-    <h3>EO Casualties SADD Breakdown</h3>
     <div id="counts">Loading...</div>
   </div>
 
@@ -136,7 +192,6 @@
         zoom: 6,
         ui: { components: ["attribution"] }
       });
-
       view.popup.maxWidth = 100;
 
       const casualtiesLayer = new FeatureLayer({
@@ -144,9 +199,9 @@
         outFields: ["*"],
         title: "Casualties",
         popupTemplate: {
-          title: "Incident on {report_dt}",
+          title: "Incident on {acc_dt}",
           content: `
-            <strong>Incident Count:</strong> {Incident_Count}<br/>
+            <strong>Incident Count:</strong> {acc_count}<br/>
             <strong>Total Killed:</strong> {killed}<br/>
             <strong>Total Injured:</strong> {injured}</br>
             <div style="display: flex; gap: 20px; margin-top: 5px;">
@@ -174,7 +229,7 @@
         },
         labelingInfo: [{
           labelExpressionInfo: {
-            expression: "$feature.Incident_Count"
+            expression: "$feature.acc_count"
           },
           symbol: {
             type: "text",
@@ -210,6 +265,11 @@
 
       const container = document.getElementById("metadataContainer");
       const rangeDisplay = document.getElementById("dateRangeDisplay");
+      const countsBox = document.getElementById("counts");
+
+      // State to handle click locking
+      let userClickedDay = false;
+      let currentFilterDay = null;
 
       casualtiesLayer.when(() => {
         view.whenLayerView(casualtiesLayer).then(function(layerView) {
@@ -224,50 +284,60 @@
           const features = result.features;
           const dayGroups = {};
 
-          let boys = 0, girls = 0, men = 0, women = 0;
+          let boysKilled = 0, girlsKilled = 0, menKilled = 0, womenKilled = 0;
+          let boysInjured = 0, girlsInjured = 0, menInjured = 0, womenInjured = 0;
 
           features.forEach(f => {
             const attr = f.attributes;
-            const date = new Date(attr.report_dt);
+            const date = new Date(attr.acc_dt);
             const day = date.toISOString().split("T")[0];
 
             if (!dayGroups[day]) dayGroups[day] = [];
             dayGroups[day].push(attr);
 
-            boys += attr.killed_male_child || 0;
-            girls += attr.killed_female_child || 0;
-            men += attr.killed_male_adult || 0;
-            women += attr.killed_female_adult || 0;
+            boysKilled += attr.killed_male_child || 0;
+            girlsKilled += attr.killed_female_child || 0;
+            menKilled += attr.killed_male_adult || 0;
+            womenKilled += attr.killed_female_adult || 0;
+
+            boysInjured += attr.injured_male_child || 0;
+            girlsInjured += attr.injured_female_child || 0;
+            menInjured += attr.injured_male_adult || 0;
+            womenInjured += attr.injured_female_adult || 0;
           });
 
-          const injuredBoys = features.reduce((sum, f) => sum + (f.attributes.injured_male_child || 0), 0);
-          const injuredGirls = features.reduce((sum, f) => sum + (f.attributes.injured_female_child || 0), 0);
-          const injuredMen = features.reduce((sum, f) => sum + (f.attributes.injured_male_adult || 0), 0);
-          const injuredWomen = features.reduce((sum, f) => sum + (f.attributes.injured_female_adult || 0), 0);
-
-          document.getElementById("counts").innerHTML =
-            `<strong>Killed:</strong> Boys: ${boys} | Girls: ${girls} | Men: ${men} | Women: ${women}<br/>
-             <strong>Injured:</strong> Boys: ${injuredBoys} | Girls: ${injuredGirls} | Men: ${injuredMen} | Women: ${injuredWomen}`;
+          countsBox.innerHTML = `
+            <strong>Casualty Summary</strong><br/>
+            <strong>Killed:</strong> Boys: ${boysKilled} | Girls: ${girlsKilled} | Men: ${menKilled} | Women: ${womenKilled}<br/>
+            <strong>Injured:</strong> Boys: ${boysInjured} | Girls: ${girlsInjured} | Men: ${menInjured} | Women: ${womenInjured}
+          `;
 
           container.innerHTML = "";
 
-          Object.entries(dayGroups).sort().forEach(([day, attrs], index) => {
-            let killed = 0, injured = 0;
-
-            attrs.forEach(a => {
-              killed += a.killed || 0;
-              injured += (a.injured_female_adult || 0) +
-                         (a.injured_male_adult || 0) +
-                         (a.injured_female_child || 0) +
-                         (a.injured_male_child || 0);
-            });
-
+          Object.entries(dayGroups).sort().forEach(([day, attrs]) => {
             const box = document.createElement("div");
             box.className = "metadataDay";
             box.setAttribute("data-day", day);
-            box.style.backgroundColor = index % 2 === 0 ? "#d3d3d3" : "#a9a9a9";
 
-            box.innerHTML = `<strong>${day}</strong><br/>Events: ${attrs.length}<br/>Deaths: ${killed}<br/>Injured: ${injured}`;
+            const dateObj = new Date(day);
+            const monthName = dateObj.toLocaleString("default", { month: "short" });
+            const dayNum = dateObj.getDate();
+
+            box.innerHTML = `
+              <div class="dateLabel">
+                <div class="month">${monthName}</div>
+                <div class="day">${dayNum}</div>
+              </div>
+              <div class="incidentList">
+                ${attrs.map(attr => `
+                  <div class="incidentRecord">
+                    <span class="redDot">${attr.acc_count}</span>
+                    Killed: ${attr.killed || 0}, Injured: ${((attr.injured_female_adult||0)+(attr.injured_male_adult||0)+(attr.injured_female_child||0)+(attr.injured_male_child||0))}
+                  </div>
+                `).join('')}
+              </div>
+            `;
+
             container.appendChild(box);
           });
 
@@ -276,7 +346,36 @@
         });
       });
 
+      container.addEventListener("click", e => {
+        if (e.target.closest(".metadataDay")) {
+          const box = e.target.closest(".metadataDay");
+          userClickedDay = true;
+          currentFilterDay = box.getAttribute("data-day");
+          filterForDay(currentFilterDay);
+          e.stopPropagation();
+        }
+      });
+
+      document.body.addEventListener("click", e => {
+        if (userClickedDay) {
+          if (!container.contains(e.target)) {
+            userClickedDay = false;
+            currentFilterDay = null;
+            updateOnScroll();
+          }
+        }
+      });
+
+      function filterForDay(day) {
+        if (casualtiesLayerView) {
+          casualtiesLayerView.filter = { where: `acc_dt LIKE '${day}%'` };
+          rangeDisplay.textContent = `Filtered for day: ${day}`;
+        }
+      }
+
       function updateOnScroll() {
+        if (userClickedDay) return; // locked, skip scroll updates
+
         const boxes = document.querySelectorAll(".metadataDay");
         const containerRect = container.getBoundingClientRect();
         const visibleDays = [];
@@ -285,18 +384,19 @@
           const rect = box.getBoundingClientRect();
           if (rect.right >= containerRect.left && rect.left <= containerRect.right) {
             visibleDays.push(box.getAttribute("data-day"));
-            box.classList.add("highlight");
-          } else {
-            box.classList.remove("highlight");
           }
         });
 
         if (visibleDays.length > 0 && casualtiesLayerView) {
-          const whereClause = visibleDays.map(day => `report_dt LIKE '${day}%'`).join(" OR ");
+          const whereClause = visibleDays.map(day => `acc_dt LIKE '${day}%'`).join(" OR ");
           casualtiesLayerView.filter = { where: whereClause };
-          rangeDisplay.textContent = `${visibleDays[0]} - ${visibleDays[visibleDays.length - 1]}`;
+          rangeDisplay.textContent = `Visible Date Range: ${visibleDays[0]} - ${visibleDays[visibleDays.length - 1]}`;
+        } else {
+          rangeDisplay.textContent = "No visible days";
+          casualtiesLayerView.filter = null;
         }
       }
+
     });
   </script>
 </body>
