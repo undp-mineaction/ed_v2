@@ -207,7 +207,6 @@
       const casualtiesLayer = new FeatureLayer({
         url: https://geosmarthosting.undp.org/arcgis/rest/services/Hosted/Copy_of_accidents_pull/FeatureServer/0,
         outFields: ["*"],
-        definitionExpression: "acc_dt >= TIMESTAMP '2022-01-01 00:00:00' AND acc_dt < TIMESTAMP '2024-11-02 00:00:00'",
         popupTemplate: {
           title: "Incident on {acc_dt}",
           content: `
