@@ -205,7 +205,8 @@
       });
 
       const casualtiesLayer = new FeatureLayer({
-        url: "https://geosmarthosting.undp.org/arcgis/rest/services/Hosted/Copy_of_accidents_pull/FeatureServer/0",
+        url: "https://geosmarthosting.undp.org/arcgis/rest/services/Hosted/Copy_of_accidents_pull/FeatureServer/0/query?where=acc_dt%20%3E%3D%20DATE%20'2022-01-01'%20AND%20acc_dt%20%3C%20DATE%20'2024-11-02'&outFields=*&f=geojson
+",
         outFields: ["*"],
         popupTemplate: {
           title: "Incident on {acc_dt}",
