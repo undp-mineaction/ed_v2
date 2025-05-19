@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Chrono Map with Horizontal Scroll</title>
+  <title>Chrono Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://js.arcgis.com/4.28/esri/themes/dark/main.css" rel="stylesheet" />
   <script src="https://js.arcgis.com/4.28/"></script>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     html, body {
-      padding: 0;
       margin: 0;
-      height: 100%;
+      padding: 0;
+      height: 94%;
       width: 100%;
-      font-family: 'Nunito', 'Avenir', sans-serif;
+      font-family: 'Nunito', sans-serif;
       background: #121212;
     }
 
@@ -21,6 +21,39 @@
       height: calc(100% - 160px);
       width: 100%;
     }
+    
+    #buttonContainer {
+  position: absolute;
+  bottom: 290px;
+  right: 20px;
+  z-index: 20;
+}
+
+#toggleFilterBtn {
+  padding: 6px 12px;
+  background: #0468B1;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+    #logoBox {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    #logoBox img {
+      height: 50px;
+      margin-bottom: 10px;
+    }
+
 
     #infoBox {
       position: absolute;
@@ -50,19 +83,14 @@
     }
 
     #metadataContainer::-webkit-scrollbar {
-      height: 40px;
+      height: 20px;
     }
     #metadataContainer::-webkit-scrollbar-thumb {
       background-color: #888;
-      border-radius: 0;
-      -webkit-appearance: none;
-    }
-    #metadataContainer::-webkit-scrollbar-track {
-      background: transparent;
     }
 
     .metadataDay {
-      min-width: 160px;
+      min-width: 60px;
       padding: 6px 12px;
       color: white;
       border-right: 0.5px solid #555;
@@ -76,6 +104,7 @@
       user-select: none;
       transition: background-color 0.25s ease;
     }
+
     .metadataDay:nth-child(even) {
       background-color: #3c3c3c;
     }
@@ -86,25 +115,24 @@
       align-items: center;
       justify-content: center;
       color: #bbb;
-      user-select: none;
     }
+
     .dateLabel .month {
       font-size: 11px;
       text-transform: uppercase;
       font-weight: 600;
-      line-height: 1;
     }
+
     .dateLabel .day {
       font-size: 22px;
       font-weight: 700;
-      line-height: 1;
       margin-top: 2px;
       color: white;
     }
 
     .incidentList {
       margin-top: 8px;
-      max-height: 140px;
+      max-height: px;
       overflow-y: auto;
       font-size: 11px;
       color: #ddd;
@@ -122,16 +150,16 @@
       width: 20px;
       height: 20px;
       background-color: #e74c3c;
+      border: none;
       border-radius: 50%;
       margin-right: 6px;
-      flex-shrink: 0;
       color: white;
       font-weight: 700;
       font-size: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      user-select: none;
+      cursor: pointer;
     }
 
     #dateRangeDisplay {
@@ -143,23 +171,9 @@
       height: 40px;
       background: rgba(0, 0, 0, 0.3);
       color: white;
-      text-align: left;
       line-height: 40px;
       font-size: 13px;
       z-index: 10;
-    }
-
-    #logoBox {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 20;
-    }
-
-    #logoBox img {
-      height: 50px;
-      width: auto;
-      opacity: 1;
     }
   </style>
 </head>
@@ -168,11 +182,9 @@
     <img src="https://raw.githubusercontent.com/undp-mineaction/ed_v2/main/UNDP_LOGO.png" alt="UNDP Logo" />
   </div>
   <div id="viewDiv"></div>
-
-  <div id="infoBox">
-    <div id="counts">Loading...</div>
-  </div>
-
+  <div id="buttonContainer">
+  <button id="toggleFilterBtn">Show All Points</button></div>
+  <div id="infoBox"><div id="counts">Loading...</div></div>
   <div id="metadataContainer"></div>
   <div id="dateRangeDisplay">Visible Date Range: </div>
 
@@ -184,7 +196,6 @@
     ], function(Map, MapView, FeatureLayer) {
 
       const map = new Map({ basemap: "gray" });
-
       const view = new MapView({
         container: "viewDiv",
         map: map,
@@ -192,12 +203,10 @@
         zoom: 6,
         ui: { components: ["attribution"] }
       });
-      view.popup.maxWidth = 100;
 
       const casualtiesLayer = new FeatureLayer({
         url: "https://geosmarthosting.undp.org/arcgis/rest/services/Hosted/Copy_of_accidents_pull/FeatureServer/0",
         outFields: ["*"],
-        title: "Casualties",
         popupTemplate: {
           title: "Incident on {acc_dt}",
           content: `
@@ -227,154 +236,144 @@
             <strong>EO Category:</strong> {eo_cat}<br/>
           `
         },
-        labelingInfo: [{
-          labelExpressionInfo: {
-            expression: "$feature.acc_count"
-          },
-          symbol: {
-            type: "text",
-            color: "white",
-            haloColor: "black",
-            haloSize: 1,
-            font: {
-              size: 10,
-              family: "Avenir Next",
-              weight: "normal"
-            }
-          },
-          labelPlacement: "center-center"
-        }],
-        labelsVisible: true,
         renderer: {
-          type: "simple",
-          symbol: {
-            type: "simple-marker",
-            color: "#e74c3c",
-            size: "25px",
-            outline: {
-              color: "#ffffff",
-              width: 1
-            }
-          }
-        }
+  type: "simple",
+  symbol: {
+    type: "simple-marker",
+    color: "#e74c3c",
+    size: "25px",
+    outline: {
+      color: "#ffffff",
+      width: 1
+    }
+  }
+},
+labelingInfo: [{
+  labelExpressionInfo: {
+    expression: "$feature.acc_count"
+  },
+  symbol: {
+    type: "text",
+    color: "white",
+    haloColor: "#121212",
+    haloSize: "1.5px",
+    font: {
+      size: 11,
+      family: "Nunito",
+      weight: "bold"
+    }
+  },
+  labelPlacement: "center-center"
+}]
       });
-
-      let casualtiesLayerView;
 
       map.add(casualtiesLayer);
 
+      let casualtiesLayerView, fullFeatureSet;
+      let showAllPoints = false;
       const container = document.getElementById("metadataContainer");
       const rangeDisplay = document.getElementById("dateRangeDisplay");
       const countsBox = document.getElementById("counts");
-
-      // State to handle click locking
-      let userClickedDay = false;
-      let currentFilterDay = null;
+      const toggleFilterBtn = document.getElementById("toggleFilterBtn");
 
       casualtiesLayer.when(() => {
-        view.whenLayerView(casualtiesLayer).then(function(layerView) {
+        view.whenLayerView(casualtiesLayer).then(layerView => {
           casualtiesLayerView = layerView;
-        });
 
-        casualtiesLayer.queryFeatures({
-          where: "1=1",
-          outFields: ["*"],
-          returnGeometry: false
-        }).then(result => {
-          const features = result.features;
-          const dayGroups = {};
+          casualtiesLayer.queryFeatures({
+            where: "1=1",
+            outFields: ["*"],
+            returnGeometry: true
+          }).then(result => {
+            const features = result.features;
+            fullFeatureSet = features;
 
-          let boysKilled = 0, girlsKilled = 0, menKilled = 0, womenKilled = 0;
-          let boysInjured = 0, girlsInjured = 0, menInjured = 0, womenInjured = 0;
+            const dayMap = {};
+            let minDate = null, maxDate = null;
 
-          features.forEach(f => {
-            const attr = f.attributes;
-            const date = new Date(attr.acc_dt);
-            const day = date.toISOString().split("T")[0];
+            features.forEach(f => {
+              const d = new Date(f.attributes.acc_dt);
+              const dayStr = d.toISOString().split("T")[0];
+              if (!dayMap[dayStr]) dayMap[dayStr] = [];
+              dayMap[dayStr].push(f);
 
-            if (!dayGroups[day]) dayGroups[day] = [];
-            dayGroups[day].push(attr);
+              if (!minDate || d < minDate) minDate = d;
+              if (!maxDate || d > maxDate) maxDate = d;
+            });
 
-            boysKilled += attr.killed_male_child || 0;
-            girlsKilled += attr.killed_female_child || 0;
-            menKilled += attr.killed_male_adult || 0;
-            womenKilled += attr.killed_female_adult || 0;
+            let days = [];
+            let current = new Date(minDate);
+            current.setHours(0,0,0,0);
 
-            boysInjured += attr.injured_male_child || 0;
-            girlsInjured += attr.injured_female_child || 0;
-            menInjured += attr.injured_male_adult || 0;
-            womenInjured += attr.injured_female_adult || 0;
-          });
+            while (current <= maxDate) {
+              const str = current.toISOString().split("T")[0];
+              days.push(str);
+              current.setDate(current.getDate() + 1);
+            }
 
-          countsBox.innerHTML = `
-            <strong>Casualty Summary</strong><br/>
-            <strong>Killed:</strong> Boys: ${boysKilled} | Girls: ${girlsKilled} | Men: ${menKilled} | Women: ${womenKilled}<br/>
-            <strong>Injured:</strong> Boys: ${boysInjured} | Girls: ${girlsInjured} | Men: ${menInjured} | Women: ${womenInjured}
-          `;
+            let stats = { bk:0, gk:0, mk:0, wk:0, bi:0, gi:0, mi:0, wi:0 };
+            features.forEach(f => {
+              const a = f.attributes;
+              stats.bk += a.killed_male_child || 0;
+              stats.gk += a.killed_female_child || 0;
+              stats.mk += a.killed_male_adult || 0;
+              stats.wk += a.killed_female_adult || 0;
+              stats.bi += a.injured_male_child || 0;
+              stats.gi += a.injured_female_child || 0;
+              stats.mi += a.injured_male_adult || 0;
+              stats.wi += a.injured_female_adult || 0;
+            });
 
-          container.innerHTML = "";
-
-          Object.entries(dayGroups).sort().forEach(([day, attrs]) => {
-            const box = document.createElement("div");
-            box.className = "metadataDay";
-            box.setAttribute("data-day", day);
-
-            const dateObj = new Date(day);
-            const monthName = dateObj.toLocaleString("default", { month: "short" });
-            const dayNum = dateObj.getDate();
-
-            box.innerHTML = `
-              <div class="dateLabel">
-                <div class="month">${monthName}</div>
-                <div class="day">${dayNum}</div>
-              </div>
-              <div class="incidentList">
-                ${attrs.map(attr => `
-                  <div class="incidentRecord">
-                    <span class="redDot">${attr.acc_count}</span>
-                    Killed: ${attr.killed || 0}, Injured: ${((attr.injured_female_adult||0)+(attr.injured_male_adult||0)+(attr.injured_female_child||0)+(attr.injured_male_child||0))}
-                  </div>
-                `).join('')}
-              </div>
+            countsBox.innerHTML = `
+              <strong>Casualty Summary</strong><br/>
+              <strong>Killed:</strong> Boys: ${stats.bk} | Girls: ${stats.gk} | Men: ${stats.mk} | Women: ${stats.wk}<br/>
+              <strong>Injured:</strong> Boys: ${stats.bi} | Girls: ${stats.gi} | Men: ${stats.mi} | Women: ${stats.wi}
             `;
 
-            container.appendChild(box);
-          });
+            container.innerHTML = "";
 
-          container.addEventListener("scroll", updateOnScroll);
-          updateOnScroll();
+            days.forEach(day => {
+              const dateObj = new Date(day);
+              const monthName = dateObj.toLocaleString("default", { month: "short" });
+              const dayNum = dateObj.getDate();
+
+              const incidents = dayMap[day] || [];
+              const box = document.createElement("div");
+              box.className = "metadataDay";
+              box.setAttribute("data-day", day);
+
+              box.innerHTML = `
+                <div class="dateLabel">
+                  <div class="month">${monthName}</div>
+                  <div class="day">${dayNum}</div>
+                </div>
+                <div class="incidentList">
+                  ${incidents.map(attr => `
+                    <div class="incidentRecord">
+                      <button class="redDot" data-oid="${attr.attributes.objectid}">
+                        ${attr.attributes.acc_count}
+                      </button>
+                      Killed: ${attr.attributes.killed || 0}, Injured: ${
+                        (attr.attributes.injured_female_adult || 0) +
+                        (attr.attributes.injured_male_adult || 0) +
+                        (attr.attributes.injured_female_child || 0) +
+                        (attr.attributes.injured_male_child || 0)
+                      }
+                    </div>`).join("")}
+                </div>
+              `;
+              container.appendChild(box);
+            });
+
+            updateOnScroll();
+          });
         });
       });
 
-      container.addEventListener("click", e => {
-        if (e.target.closest(".metadataDay")) {
-          const box = e.target.closest(".metadataDay");
-          userClickedDay = true;
-          currentFilterDay = box.getAttribute("data-day");
-          filterForDay(currentFilterDay);
-          e.stopPropagation();
-        }
-      });
-
-      document.body.addEventListener("click", e => {
-        if (userClickedDay) {
-          if (!container.contains(e.target)) {
-            userClickedDay = false;
-            currentFilterDay = null;
-            updateOnScroll();
-          }
-        }
-      });
-
-      function filterForDay(day) {
-        if (casualtiesLayerView) {
-          casualtiesLayerView.filter = { where: `acc_dt LIKE '${day}%'` };
-          rangeDisplay.textContent = `Filtered for day: ${day}`;
-        }
-      }
+      container.addEventListener("scroll", updateOnScroll);
 
       function updateOnScroll() {
-        if (userClickedDay) return; // locked, skip scroll updates
+        if (!casualtiesLayerView || showAllPoints) return;
 
         const boxes = document.querySelectorAll(".metadataDay");
         const containerRect = container.getBoundingClientRect();
@@ -387,15 +386,56 @@
           }
         });
 
-        if (visibleDays.length > 0 && casualtiesLayerView) {
-          const whereClause = visibleDays.map(day => `acc_dt LIKE '${day}%'`).join(" OR ");
-          casualtiesLayerView.filter = { where: whereClause };
+        if (visibleDays.length > 0) {
+          const where = visibleDays.map(d => `acc_dt LIKE '${d}%'`).join(" OR ");
+          casualtiesLayerView.filter = { where };
           rangeDisplay.textContent = `Visible Date Range: ${visibleDays[0]} - ${visibleDays[visibleDays.length - 1]}`;
-        } else {
-          rangeDisplay.textContent = "No visible days";
-          casualtiesLayerView.filter = null;
         }
       }
+
+      toggleFilterBtn.addEventListener("click", () => {
+        showAllPoints = !showAllPoints;
+        if (casualtiesLayerView) {
+          casualtiesLayerView.filter = showAllPoints ? null : { where: "1=0" };
+          toggleFilterBtn.textContent = showAllPoints ? "Show Filtered Range" : "Show All Points";
+          updateOnScroll();
+        }
+      });
+
+      // ✅ PATCHED HANDLER BELOW
+      container.addEventListener("click", (event) => {
+        const target = event.target;
+        if (target.classList.contains("redDot")) {
+          const oid = parseInt(target.getAttribute("data-oid"));
+          if (!casualtiesLayer) return;
+
+          casualtiesLayer.queryFeatures({
+            where: `objectid = ${oid}`,
+            outFields: ["*"],
+            returnGeometry: true
+          }).then(result => {
+            if (result.features.length > 0) {
+              const feature = result.features[0];
+              if (!feature.geometry) {
+                console.warn("Feature geometry is null");
+                return;
+              }
+
+              view.popup.open({
+                features: [feature],
+                location: feature.geometry
+              });
+
+              view.goTo({
+                target: feature.geometry,
+                zoom: Math.max(view.zoom, 13)
+              });
+            }
+          }).catch(err => {
+            console.error("Error querying feature for popup:", err);
+          });
+        }
+      });
 
     });
   </script>
